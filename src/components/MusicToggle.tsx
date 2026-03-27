@@ -1,67 +1,115 @@
 import { useState, useRef, useEffect } from 'react';
+import { Volume2, VolumeX, AlertCircle } from 'lucide-react';
 
 export const MusicToggle = () => {
   const [playing, setPlaying] = useState(false);
+  const [muted, setMuted] = useState(false);
+  const [audioError, setAudioError] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    // Use a royalty-free ambient tone generated via oscillator
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const gainNode = ctx.createGain();
-    gainNode.gain.value = 0;
-    gainNode.connect(ctx.destination);
+    // Create audio element for background music from provided remote URL
+    const remoteUrl = 'https://cdn.pixabay.com/download/audio/2026/03/12/audio_bea8e8877a.mp3?filename=alexgrohl-energetic-action-sport-500409.mp3';
+    const fallbackUrl = '/bgm.mp3';
+    const audio = new Audio(remoteUrl);
+    audio.loop = true;
+    audio.volume = 0.3;
+    audio.preload = 'auto';
 
-    // Create ambient drone
-    const createOsc = (freq: number, type: OscillatorType, vol: number) => {
-      const osc = ctx.createOscillator();
-      const g = ctx.createGain();
-      osc.type = type;
-      osc.frequency.value = freq;
-      g.gain.value = vol;
-      osc.connect(g);
-      g.connect(gainNode);
-      osc.start();
-      return { osc, gain: g };
+    audioRef.current = audio;
+
+    const onError = () => {
+      if (audio.src !== fallbackUrl) {
+        console.warn('Remote BGM failed, trying fallback file /bgm.mp3.');
+        audio.src = fallbackUrl;
+        audio.load();
+        audio.play().catch(() => setAudioError(true));
+      } else {
+        console.warn('Fallback BGM file missing or failed to load.');
+        setAudioError(true);
+      }
     };
 
-    const oscs = [
-      createOsc(60, 'sine', 0.3),
-      createOsc(90, 'sine', 0.15),
-      createOsc(120, 'triangle', 0.08),
-      createOsc(180, 'sine', 0.05),
-    ];
+    const onCanPlayThrough = () => setAudioError(false);
 
-    audioRef.current = { ctx, gainNode, oscs } as any;
+    audio.addEventListener('error', onError);
+    audio.addEventListener('canplaythrough', onCanPlayThrough);
 
     return () => {
-      oscs.forEach(o => o.osc.stop());
-      ctx.close();
+      audio.removeEventListener('error', onError);
+      audio.removeEventListener('canplaythrough', onCanPlayThrough);
+      audio.pause();
+      audio.src = '';
     };
   }, []);
 
-  const toggle = () => {
-    const audio = audioRef.current as any;
+  const toggle = async () => {
+    const audio = audioRef.current;
     if (!audio) return;
-    if (audio.ctx.state === 'suspended') audio.ctx.resume();
-    const target = playing ? 0 : 0.4;
-    audio.gainNode.gain.linearRampToValueAtTime(target, audio.ctx.currentTime + 0.5);
-    setPlaying(!playing);
+
+    try {
+      if (playing) {
+        audio.pause();
+        setPlaying(false);
+      } else {
+        // Resume audio context if suspended (required by some browsers)
+        if (audio.context && audio.context.state === 'suspended') {
+          await audio.context.resume();
+        }
+        await audio.play();
+        setPlaying(true);
+      }
+    } catch (error) {
+      console.error('Error playing audio:', error);
+      setAudioError(true);
+    }
   };
 
+  const toggleMute = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    audio.muted = !muted;
+    setMuted(!muted);
+  };
+
+  if (audioError) {
+    return (
+      <button
+        className="p-2 rounded-full glass hover:neon-border transition-all text-yellow-400"
+        title="BGM file not found - add bgm.mp3 to public folder"
+      >
+        <AlertCircle size={18} />
+      </button>
+    );
+  }
+
   return (
-    <button onClick={toggle} className="p-2 rounded-full glass hover:neon-border transition-all flex items-center gap-1.5" title={playing ? 'Pause music' : 'Play music'}>
-      <div className="flex items-end gap-0.5 h-4">
-        {[1, 2, 3, 4].map(i => (
-          <div
-            key={i}
-            className="w-[3px] rounded-full bg-primary transition-all"
-            style={{
-              height: playing ? undefined : '4px',
-              animation: playing ? `equalizer-bar ${0.3 + i * 0.15}s ease-in-out infinite ${i * 0.1}s` : 'none',
-            }}
-          />
-        ))}
-      </div>
-    </button>
+    <div className="flex items-center gap-2">
+      <button
+        onClick={toggle}
+        className="p-2 rounded-full glass hover:neon-border transition-all"
+        title={playing ? 'Pause Background Music' : 'Play Background Music'}
+      >
+        {playing ? (
+          <Volume2 size={18} className="text-primary" />
+        ) : (
+          <VolumeX size={18} className="text-muted-foreground" />
+        )}
+      </button>
+      {playing && (
+        <button
+          onClick={toggleMute}
+          className="p-2 rounded-full glass hover:neon-border transition-all"
+          title={muted ? 'Unmute' : 'Mute'}
+        >
+          {muted ? (
+            <VolumeX size={16} className="text-red-400" />
+          ) : (
+            <Volume2 size={16} className="text-green-400" />
+          )}
+        </button>
+      )}
+    </div>
   );
 };
