@@ -16,7 +16,7 @@ export const AboutSection = () => {
     <section id="about" className="py-32 px-6">
       <div ref={ref} className="max-w-6xl mx-auto">
         <h2 className={`text-3xl md:text-5xl font-bold text-center mb-4 gradient-text transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ fontFamily: 'Orbitron' }}>
-          About Nexus
+          About NEXUX
         </h2>
         <p className={`text-muted-foreground text-center mb-16 max-w-xl mx-auto transition-all duration-700 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           We're building the infrastructure for tomorrow's digital reality

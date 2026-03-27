@@ -56,7 +56,7 @@ export const HeroSection = () => {
           className="relative px-10 py-4 rounded-full bg-primary text-primary-foreground font-bold uppercase tracking-widest text-sm overflow-hidden group animate-pulse-glow"
           style={{ fontFamily: 'Orbitron', animation: 'slide-up 0.8s ease-out 0.8s both, pulse-glow 2s ease-in-out infinite' }}
         >
-          <span className="relative z-10">Enter the Nexus</span>
+          <span className="relative z-10">Enter the NEXUX</span>
           <div className="absolute inset-0 bg-gradient-to-r from-primary via-secondary to-accent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
         </button>
         <div className="mt-20 animate-bounce">
